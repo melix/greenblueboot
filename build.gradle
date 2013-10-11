@@ -1,0 +1,63 @@
+buildscript {
+    repositories {
+        maven { url "http://repo.spring.io/libs-snapshot" }
+        mavenLocal()
+    }
+    dependencies {
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:0.5.0.M5'
+        classpath 'org.cloudfoundry:cf-gradle-plugin:0.3.0-SNAPSHOT'
+    }
+}
+
+apply plugin: 'groovy'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+apply plugin: 'war'
+
+// Generic Spring Boot WAR
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+version = '0.1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url "http://repo.spring.io/libs-snapshot" }
+}
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-web:0.5.0.M5'
+    compile 'org.codehaus.groovy:groovy-all:2.1.7'
+    testCompile("junit:junit:4.11")
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.8'
+}
+
+task run(type: JavaExec) {
+    classpath configurations.runtime, sourceSets.main.output
+    main = 'io.spring.CedricTestApp'
+}
+
+// Green-Blue deployment
+apply plugin: 'cloudfoundry'
+
+war {
+    archiveName = 'greenblueboot.war'
+}
+
+cloudfoundry {
+    target = 'https://api.run.pivotal.io'
+    organization = 'spring.io'
+    space = 'development'
+    application = 'testcedric'
+    file = war.archivePath
+}
+
+task gbdeploy(type:GreenBlueDeploy)
+task gbswitch(type:GreenBlueMapping) {
+    spaceMappings = [
+            development: [map: ['blabla.cfapps.io'], unmap: ['blabla.cfapps.io']]
+    ]
+}
